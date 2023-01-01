@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, dead_code, avoid_print, unused_local_variable, prefer_typing_uninitialized_variables, iterable_contains_unrelated_type
+// ignore_for_file: prefer_const_constructors, dead_code, avoid_print, unused_local_variable, prefer_typing_uninitialized_variables, iterable_contains_unrelated_type, unused_element
 
 import 'package:flutter/material.dart';
 import 'package:todoapp/services/database.dart';
@@ -15,8 +15,8 @@ class ToDoScreen extends StatefulWidget {
 class _ToDoScreenState extends State<ToDoScreen> {
   TextEditingController todoTitleController = TextEditingController();
   List<TextEditingController> editToDoTitleController = [];
-  var selectedEditIndex;
-  bool showTextField = false;
+  var selectedEditIndex, selectindx;
+  List<bool> showTextField = [];
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +37,12 @@ class _ToDoScreenState extends State<ToDoScreen> {
                 ));
               }
               List<ToDoClass>? todos = snapshot.data;
+
+              List<String?> x = [];
+              for (var i = 0; i < todos!.length; i++) {
+                x.add(todos[i].uid);
+                showTextField.add(todos[i].isChecked!);
+              }
 
               return Column(
                 // ignore: prefer_const_literals_to_create_immutables
@@ -103,12 +109,19 @@ class _ToDoScreenState extends State<ToDoScreen> {
                   Expanded(
                     child: ListView.builder(
                         shrinkWrap: true,
-                        itemCount: todos!.length,
+                        itemCount: todos.length,
                         itemBuilder: (context, index) {
                           editToDoTitleController = [
                             for (int i = 0; i < todos.length; i++)
                               (TextEditingController())
                           ];
+                          Future<int> func() async {
+                            await selectedEditIndex;
+                            selectindx = (x.indexOf(selectedEditIndex));
+                            print(selectindx);
+
+                            return selectindx;
+                          }
 
                           return Padding(
                             padding: const EdgeInsets.only(top: 15),
@@ -140,26 +153,25 @@ class _ToDoScreenState extends State<ToDoScreen> {
                                     ),
                                     Expanded(
                                       flex: 4,
-                                      child: showTextField
+                                      child: showTextField[index]
                                           ? TextField(
                                               onSubmitted: (value) {
-                                                var title;
+                                                showTextField[selectindx] =
+                                                    false;
 
-                                                showTextField = false;
-                                                title = value;
-                                                editToDoTitleController[index]
-                                                    .text = title;
+                                                editToDoTitleController[
+                                                        selectindx]
+                                                    .text = value;
                                                 DatabaseService().editToDo(
-                                                    todos[index].uid, title);
-
-                                                print(editToDoTitleController[
-                                                        index]
-                                                    .text);
+                                                    todos[index].uid,
+                                                    editToDoTitleController[
+                                                            selectindx]
+                                                        .text);
                                               },
-                                              // autofocus: true,
+                                              autofocus: true,
                                               controller:
                                                   editToDoTitleController[
-                                                      index],
+                                                      selectindx],
                                               decoration: InputDecoration(
                                                   isDense: true),
                                               style: TextStyle(fontSize: 18),
@@ -172,9 +184,12 @@ class _ToDoScreenState extends State<ToDoScreen> {
                                     Expanded(
                                       child: IconButton(
                                         iconSize: 36,
-                                        onPressed: () {
+                                        onPressed: () async {
+                                          selectedEditIndex = todos[index].uid;
+
+                                          await func();
                                           setState(() {
-                                            showTextField = true;
+                                            showTextField[selectindx] = true;
                                           });
                                         },
                                         icon: Icon(Icons.edit_note),
